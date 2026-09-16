@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
+
+# Generated runtime audio cache
+static/audio/*.mp3
+!static/audio/.gitkeep
+
+# Logs and system
+*.log
+.DS_Store
+Thumbs.db

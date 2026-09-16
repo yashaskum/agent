@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J.A.R.V.I.S. // Stark Industries Mark VII</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Background Grid & Scanline FX -->
+  <div class="hud-scanlines"></div>
+  <div class="hud-grid"></div>
+
+  <!-- Main Container -->
+  <div class="hud-container">
+    
+    <!-- Top Header -->
+    <header class="hud-header">
+      <div class="header-left">
+        <div class="stark-logo">STARK <span class="accent-text">INDUSTRIES</span></div>
+        <div class="protocol-tag">PROTOCOLS: <span class="status-online">MARK VII ONLINE</span></div>
+      </div>
+      
+      <div class="header-center">
+        <div class="system-title">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+        <div class="security-level">CLEARANCE: LEVEL 9 // RESTRICTED ACCESS</div>
+      </div>
+
+      <div class="header-right">
+        <div class="clock-display" id="hudClock">12:00:00 PM</div>
+        <div class="system-status-indicator">
+          <span class="status-dot"></span>
+          <span id="connStatus">ONLINE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="hud-main">
+      
+      <!-- Left Panel: Telemetry & Hardware -->
+      <aside class="hud-panel panel-left">
+        <div class="panel-header">
+          <span class="panel-title">// HARDWARE DIAGNOSTICS</span>
+          <span class="panel-tag">LIVE FEED</span>
+        </div>
+        
+        <div class="telemetry-grid">
+          <!-- CPU Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-label">
+              <span>PROCESSOR LOAD</span>
+              <span class="gauge-val" id="cpuVal">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="cpuBar" style="width: 0%"></div>
+            </div>
+            <div class="gauge-sub" id="cpuSub">Cores: 8 Multi-thread</div>
+          </div>
+
+          <!-- Memory Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-label">
+              <span>RAM ALLOCATION</span>
+              <span class="gauge-val" id="ramVal">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="ramBar" style="width: 0%"></div>
+            </div>
+            <div class="gauge-sub" id="ramSub">Allocated: 0 / 0 GB</div>
+          </div>
+
+          <!-- Storage Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-label">
+              <span>PRIMARY DRIVE (C:)</span>
+              <span class="gauge-val" id="diskVal">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="diskBar" style="width: 0%"></div>
+            </div>
+            <div class="gauge-sub" id="diskSub">Storage: 0 GB Free</div>
+          </div>
+
+          <!-- Battery Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-label">
+              <span>POWER CELL</span>
+              <span class="gauge-val" id="batVal">100%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="batBar" style="width: 100%"></div>
+            </div>
+            <div class="gauge-sub" id="batSub">Power Grid: Constant AC</div>
+          </div>
+        </div>
+
+        <div class="system-meta-box">
+          <div class="meta-row">
+            <span class="meta-key">SYSTEM UPTIME:</span>
+            <span class="meta-val" id="uptimeVal">0:00:00</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">ACTIVE PROCESSES:</span>
+            <span class="meta-val" id="procVal">0</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">VOICE CORE:</span>
+            <span class="meta-val accent-text">NEURAL RYAN (GB)</span>
+          </div>
+        </div>
+
+        <!-- Tactical Action Shortcuts -->
+        <div class="quick-commands-box">
+          <div class="box-title">// RAPID PROTOCOLS</div>
+          <div class="quick-btn-grid">
+            <button class="quick-btn" data-cmd="system status">DIAGNOSTICS</button>
+            <button class="quick-btn" data-cmd="news briefing">NEWS BRIEFING</button>
+            <button class="quick-btn" data-cmd="read my notes">MY NOTES</button>
+            <button class="quick-btn" data-cmd="open chrome">CHROME</button>
+            <button class="quick-btn" data-cmd="open notepad">NOTEPAD</button>
+            <button class="quick-btn" data-cmd="open calculator">CALCULATOR</button>
+            <button class="quick-btn" data-cmd="weather">WEATHER</button>
+            <button class="quick-btn" data-cmd="lock workstation">LOCK SYSTEM</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Stage: Arc Reactor Visualizer & Persona -->
+      <section class="hud-center-stage">
+        
+        <!-- Status State Indicator -->
+        <div class="reactor-state-badge" id="stateBadge">
+          <span class="pulse-ring"></span>
+          <span class="state-text" id="stateText">STANDBY</span>
+        </div>
+
+        <!-- ARC REACTOR CANVAS -->
+        <div class="reactor-container" id="reactorWrapper">
+          <canvas id="reactorCanvas" width="600" height="600"></canvas>
+          <div class="reactor-glow-overlay"></div>
+        </div>
+
+        <!-- Live Speech & Response Bubble -->
+        <div class="dialogue-box" id="dialogueBox">
+          <div class="speech-tag" id="speechTag">J.A.R.V.I.S.</div>
+          <div class="speech-content" id="speechContent">
+            "Good day, Sir. All security protocols are active and telemetry is nominal. How may I be of assistance?"
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Panel: Tactical Feed & Conversation Stream -->
+      <aside class="hud-panel panel-right">
+        <div class="panel-header">
+          <span class="panel-title">// MISSION LOG & FEED</span>
+          <button class="clear-btn" id="clearLogBtn">PURGE</button>
+        </div>
+
+        <!-- Activity Stream -->
+        <div class="terminal-feed" id="terminalFeed">
+          <div class="feed-entry system">
+            <span class="time">[INIT]</span> MARK VII NEURAL KERNEL INITIALIZED.
+          </div>
+          <div class="feed-entry system">
+            <span class="time">[INIT]</span> AUDIO DRIVERS SYNCHRONIZED.
+          </div>
+          <div class="feed-entry jarvis">
+            <span class="speaker">JARVIS:</span> "At your command, Sir."
+          </div>
+        </div>
+
+        <!-- Direct Query Box -->
+        <div class="console-input-wrapper">
+          <form id="commandForm" class="command-form">
+            <input 
+              type="text" 
+              id="textInput" 
+              placeholder="Enter directive or speak command..." 
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit" class="submit-btn" id="sendBtn">EXECUTE</button>
+          </form>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Bottom Control Console -->
+    <footer class="hud-footer">
+      <div class="footer-left">
+        <div class="audio-hud-control">
+          <span class="audio-label">AUDIO VOLUME:</span>
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1.0" class="hud-slider" />
+        </div>
+        <button id="wakeWordBtn" class="wake-toggle-btn" title="Continuous Hands-Free Detection ('Hey Jarvis')">
+          <span class="wake-dot"></span>
+          <span id="wakeStatusText">WAKE WORD: OFF</span>
+        </button>
+      </div>
+
+      <!-- Main Voice Trigger Core Button -->
+      <div class="voice-core-trigger">
+        <button id="micBtn" class="mic-button" title="Click to Speak or Press Spacebar">
+          <div class="mic-inner-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+          </div>
+          <span class="mic-label" id="micLabel">PRESS TO SPEAK</span>
+        </button>
+      </div>
+
+      <div class="footer-right">
+        <div class="footer-meta">
+          <span>SHORTCUT: [SPACEBAR] TO TALK</span>
+          <span class="security-chip">MARK VII // CORE ENCRYPTED</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Audio Element for JARVIS voice playback -->
+  <audio id="jarvisAudio" preload="auto"></audio>
+
+  <!-- Scripts -->
+  <script src="/static/reactor.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
