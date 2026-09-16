@@ -13,6 +13,8 @@ import subprocess
 import webbrowser
 import requests
 import xml.etree.ElementTree as ET
+import shutil
+from pathlib import Path
 from typing import Dict, Any, Optional, List
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -93,15 +95,82 @@ def launch_application(app_name: str) -> Dict[str, Any]:
     try:
         if target:
             if target.startswith("ms-"):
-                os.system(f"start {target}")
+                os.startfile(target)
             else:
-                subprocess.Popen(target, shell=True)
+                executable = shutil.which(target) or target
+                subprocess.Popen([executable], shell=False)
             return {"success": True, "message": f"Launching {app_name.capitalize()}, Sir."}
-        else:
-            subprocess.Popen(cleaned, shell=True)
-            return {"success": True, "message": f"Executing command for {app_name}, Sir."}
+        executable = shutil.which(cleaned)
+        if not executable:
+            return {"success": False, "message": f"I do not have a registered application named {app_name}, Sir."}
+        subprocess.Popen([executable], shell=False)
+        return {"success": True, "message": f"Launching {app_name}, Sir."}
     except Exception as e:
         return {"success": False, "message": f"I was unable to launch {app_name}. Error: {str(e)}"}
+
+def open_path(path: str) -> Dict[str, Any]:
+    """Open a local file or folder using the Windows shell."""
+    candidate = Path(os.path.expandvars(os.path.expanduser(path.strip().strip('"'))))
+    if not candidate.exists():
+        return {"success": False, "message": f"I cannot locate {path}, Sir."}
+    try:
+        os.startfile(str(candidate))
+        return {"success": True, "message": f"Opening {candidate}, Sir.", "path": str(candidate)}
+    except Exception as e:
+        return {"success": False, "message": f"Unable to open {candidate}: {e}"}
+
+def list_processes(limit: int = 12) -> Dict[str, Any]:
+    """Return the busiest visible processes without exposing command arguments."""
+    processes = []
+    for process in psutil.process_iter(["pid", "name", "memory_percent"]):
+        try:
+            info = process.info
+            processes.append({
+                "pid": info["pid"],
+                "name": info.get("name") or "unknown",
+                "memory_percent": round(info.get("memory_percent") or 0, 1),
+            })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    processes.sort(key=lambda item: item["memory_percent"], reverse=True)
+    top = processes[:max(1, min(limit, 50))]
+    summary = "; ".join(f"{item['name']} (PID {item['pid']})" for item in top[:5])
+    return {"success": True, "processes": top, "summary": f"The busiest processes are {summary}, Sir."}
+
+def terminate_process(identifier: str) -> Dict[str, Any]:
+    """Terminate a process by PID or exact executable name after caller confirmation."""
+    try:
+        if identifier.isdigit():
+            process = psutil.Process(int(identifier))
+        else:
+            matches = [p for p in psutil.process_iter(["name"]) if (p.info.get("name") or "").lower() == identifier.lower()]
+            if not matches:
+                return {"success": False, "message": f"No exact process named {identifier} is running, Sir."}
+            process = matches[0]
+        process.terminate()
+        return {"success": True, "message": f"Process {process.pid} has been asked to exit, Sir.", "pid": process.pid}
+    except (psutil.NoSuchProcess, psutil.AccessDenied, ValueError) as e:
+        return {"success": False, "message": f"I could not terminate {identifier}: {e}"}
+
+def get_windows_user() -> Dict[str, Any]:
+    """Return basic local session identity without reading credentials."""
+    return {"success": True, "user": os.getenv("USERNAME") or os.getenv("USER") or "unknown", "computer": os.getenv("COMPUTERNAME") or "unknown"}
+
+def power_action(action: str) -> Dict[str, Any]:
+    """Request a power action; the brain must gate this behind explicit confirmation."""
+    commands = {
+        "shutdown": ["shutdown", "/s", "/t", "0"],
+        "restart": ["shutdown", "/r", "/t", "0"],
+        "logoff": ["shutdown", "/l"],
+    }
+    command = commands.get(action.lower())
+    if not command:
+        return {"success": False, "message": f"Unsupported power action: {action}."}
+    try:
+        subprocess.Popen(command, shell=False)
+        return {"success": True, "message": f"Initiating {action}, Sir."}
+    except Exception as e:
+        return {"success": False, "message": f"Unable to initiate {action}: {e}"}
 
 def open_url_or_search(query: str, search: bool = True) -> Dict[str, Any]:
     """Open URL or search via browser."""

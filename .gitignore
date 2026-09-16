@@ -10,6 +10,8 @@ venv/
 # Generated runtime audio cache
 static/audio/*.mp3
 !static/audio/.gitkeep
+audio/*.mp3
+!audio/.gitkeep
 
 # Logs and system
 *.log

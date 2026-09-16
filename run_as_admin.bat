@@ -6,7 +6,7 @@ cd /d "%~dp0"
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo [JARVIS] Requesting Administrator Elevation...
-    powershell -Command "Start-Process cmd -ArgumentList '/k \"cd /d %~dp0 && python start.py\"' -Verb RunAs"
+    powershell -Command "Start-Process '%~dp0run_as_admin.bat' -Verb RunAs"
     exit /b
 )
 
@@ -16,5 +16,9 @@ echo =========================================================
 echo       INITIALIZING J.A.R.V.I.S. (ADMINISTRATOR)
 echo =========================================================
 echo.
-python start.py
+if exist ".venv\Scripts\python.exe" (
+    .venv\Scripts\python.exe start.py
+) else (
+    python start.py
+)
 pause

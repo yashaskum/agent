@@ -34,6 +34,14 @@ A high-tech, voice-enabled **J.A.R.V.I.S. (Just A Rather Very Intelligent System
    - **System Specs**: "What are my system specs?", "Check diagnostics".
    - **Web Search & Knowledge**: "Search Google for quantum computing", "Who is Tony Stark?".
    - **Math Calculations**: "What is 452 multiplied by 18?".
+   - **Process Control**: "List running processes" and confirmation-gated exact process termination.
+   - **File & Folder Control**: "Open C:\\Users\\Name\\Downloads" or another existing local path.
+   - **Session Identity**: "Who am I?" or "What computer am I using?".
+   - **Power Controls**: Shutdown, restart, and logoff requests require a second `confirm` command.
+
+   App launching is restricted to registered shortcuts or executables discoverable on the system PATH;
+   arbitrary shell strings are not executed. Destructive operations such as power actions, process
+   termination, and recycle-bin clearing should be treated as privileged commands.
 
 ---
 
@@ -59,6 +67,9 @@ http://localhost:8000
 - *"Volume up"*
 - *"Who is Tony Stark?"*
 - *"Calculate 125 times 40"*
+- *"List running processes"*
+- *"Open C:\\Users\\Public"*
+- *"Restart"*, then *"Confirm"* if you really mean it
 - *"Good night Jarvis"*
 
 ---

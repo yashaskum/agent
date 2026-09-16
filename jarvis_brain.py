@@ -68,6 +68,7 @@ class JarvisBrain:
     def __init__(self):
         self.gemini_key = os.getenv("GEMINI_API_KEY", "")
         self.openai_key = os.getenv("OPENAI_API_KEY", "")
+        self.pending_confirmation = None
 
     async def process_input(self, user_text: str) -> Dict[str, Any]:
         """
@@ -93,6 +94,27 @@ class JarvisBrain:
                 "status": "ready"
             }
 
+        # Explicit confirmation is required for actions that end a session or process.
+        if self.pending_confirmation:
+            if re.search(r"\b(confirm|yes|proceed|do it|approved)\b", text_clean):
+                pending = self.pending_confirmation
+                self.pending_confirmation = None
+                res = pending["handler"]()
+                return {
+                    "response_text": res["message"],
+                    "action": pending["action"],
+                    "data": res,
+                    "status": "executed" if res.get("success") else "error"
+                }
+            if re.search(r"\b(no|cancel|abort|stop)\b", text_clean):
+                self.pending_confirmation = None
+                return {
+                    "response_text": "The pending operation has been cancelled, Sir.",
+                    "action": "confirmation_cancelled",
+                    "data": None,
+                    "status": "ready"
+                }
+
         # 1. Greetings
         if re.search(r"\b(hello|hi|hey|good morning|good afternoon|good evening|wake up)\b", text_clean):
             telemetry = system_control.get_system_telemetry()
@@ -104,12 +126,27 @@ class JarvisBrain:
             }
 
         # 2. Farewells & Sleep
-        if re.search(r"\b(goodbye|bye|shut down|go to sleep|exit|quit|power down|stand down)\b", text_clean):
+        if re.search(r"\b(goodbye|bye|go to sleep|exit|quit|stand down)\b", text_clean):
             return {
                 "response_text": random.choice(FAREWELLS),
                 "action": "shutdown",
                 "data": None,
                 "status": "standby"
+            }
+
+        power_match = re.search(r"\b(shut down|shutdown|restart|reboot|log off|logoff)\b", text_clean)
+        if power_match:
+            action_text = power_match.group(1).replace(" ", "")
+            action = "restart" if action_text == "reboot" else action_text
+            self.pending_confirmation = {
+                "action": f"power_{action}",
+                "handler": lambda action=action: system_control.power_action(action),
+            }
+            return {
+                "response_text": f"{action.capitalize()} will affect your Windows session. Say confirm to proceed or cancel to abort, Sir.",
+                "action": "confirmation_required",
+                "data": {"pending_action": action},
+                "status": "awaiting_confirmation"
             }
 
         # 3. Who are you / Identity
@@ -135,6 +172,46 @@ class JarvisBrain:
                 "action": "telemetry",
                 "data": telemetry,
                 "status": "analyzed"
+            }
+
+        if re.search(r"\b(help|what can you do|capabilities|commands)\b", text_clean):
+            return {
+                "response_text": "I can control approved desktop applications, open files and folders, inspect processes, manage media and volume, report diagnostics, search the web, manage notes, and prepare power actions with confirmation, Sir.",
+                "action": "help",
+                "data": None,
+                "status": "ready"
+            }
+
+        if re.search(r"\b(who am i|current user|logged in user|computer name)\b", text_clean):
+            identity = system_control.get_windows_user()
+            return {
+                "response_text": f"You are logged in as {identity['user']} on {identity['computer']}, Sir.",
+                "action": "user_info",
+                "data": identity,
+                "status": "ready"
+            }
+
+        if re.search(r"\b(list processes|running processes|task list|what is running|show processes)\b", text_clean):
+            processes = system_control.list_processes()
+            return {
+                "response_text": processes["summary"],
+                "action": "process_list",
+                "data": processes["processes"],
+                "status": "ready"
+            }
+
+        kill_match = re.search(r"\b(?:close|stop|terminate|kill)\s+(?:the\s+)?(?:process\s+)?([a-zA-Z0-9_.-]+)\b", text_clean)
+        if kill_match:
+            identifier = kill_match.group(1)
+            self.pending_confirmation = {
+                "action": "process_terminate",
+                "handler": lambda identifier=identifier: system_control.terminate_process(identifier),
+            }
+            return {
+                "response_text": f"This will terminate the exact process '{identifier}'. Say confirm to proceed or cancel to abort, Sir.",
+                "action": "confirmation_required",
+                "data": {"pending_action": "process_terminate", "identifier": identifier},
+                "status": "awaiting_confirmation"
             }
 
         # 5. Time & Date
@@ -238,12 +315,15 @@ class JarvisBrain:
             }
 
         if re.search(r"\b(empty recycle bin|clear recycle bin|purge trash)\b", text_clean):
-            res = system_control.empty_recycle_bin()
-            return {
-                "response_text": res["message"],
+            self.pending_confirmation = {
                 "action": "empty_recycle",
-                "data": None,
-                "status": "ready"
+                "handler": system_control.empty_recycle_bin,
+            }
+            return {
+                "response_text": "Emptying the recycle bin permanently removes its contents. Say confirm to proceed or cancel to abort, Sir.",
+                "action": "confirmation_required",
+                "data": {"pending_action": "empty_recycle"},
+                "status": "awaiting_confirmation"
             }
 
         # 11. Math & Calculation
@@ -272,6 +352,17 @@ class JarvisBrain:
                 return {"response_text": res["message"], "action": "volume_mute", "data": None, "status": "ready"}
 
         # 13. App Launching
+        path_match = re.search(r"\b(?:open|show|browse to)\s+(?:folder|file|path)?\s*([a-zA-Z]:[\\/][^?]*)$", raw_text, re.IGNORECASE)
+        if path_match:
+            path = path_match.group(1).strip().rstrip(" .,!?")
+            res = system_control.open_path(path)
+            return {
+                "response_text": res["message"],
+                "action": "open_path",
+                "data": {"path": path},
+                "status": "ready" if res.get("success") else "error"
+            }
+
         open_match = re.search(r"\b(?:open|launch|start|run)\s+([a-zA-Z0-9\s]+)", text_clean)
         if open_match:
             target = open_match.group(1).strip()
@@ -281,7 +372,7 @@ class JarvisBrain:
                     "response_text": res["message"],
                     "action": "app_launch",
                     "data": {"app": target},
-                    "status": "ready"
+                    "status": "ready" if res.get("success") else "error"
                 }
 
         # 14. Web Search

@@ -24,7 +24,7 @@ def banner():
     print(" [INIT] Checking core system modules...")
 
 def check_dependencies():
-    required = ["fastapi", "uvicorn", "edge_tts", "psutil", "requests"]
+    required = ["fastapi", "uvicorn", "edge_tts", "psutil", "requests", "websockets"]
     missing = []
     for pkg in required:
         try:

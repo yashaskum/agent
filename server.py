@@ -32,8 +32,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_private_network_headers(request, call_next):
+    """Support W3C Private Network Access so HTTPS cloud apps can talk to localhost."""
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
 # Mount static folder
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+@app.get("/api/bridge/ping")
+async def ping_bridge():
+    """Endpoint for Vercel app to verify local hardware bridge is online."""
+    return {"status": "online", "system": "JARVIS Local Hardware Bridge", "version": "Mark VII"}
 
 class CommandRequest(BaseModel):
     text: str

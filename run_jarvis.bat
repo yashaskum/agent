@@ -6,5 +6,9 @@ echo =========================================================
 echo       INITIALIZING J.A.R.V.I.S. TACTICAL HUD
 echo =========================================================
 echo.
-python start.py
+if exist ".venv\Scripts\python.exe" (
+	.venv\Scripts\python.exe start.py
+) else (
+	python start.py
+)
 pause
